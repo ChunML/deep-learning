@@ -2,10 +2,12 @@ import tensorflow as tf
 import numpy as np
 import os
 
+
 class Network(object):
     def __init__(self, input_size, hidden_size, output_size, lr, name='network'):
         with tf.name_scope(name):
-            self.inputs = tf.placeholder(tf.float32, [None, input_size], name='features')
+            self.inputs = tf.placeholder(
+                tf.float32, [None, input_size], name='features')
             self.labels = tf.placeholder(tf.float32, [None, output_size])
             with tf.variable_scope('hidden'):
                 weights = tf.get_variable('weights', [input_size, hidden_size],
@@ -14,7 +16,7 @@ class Network(object):
                 biases = tf.get_variable('biases', [hidden_size],
                                          initializer=tf.zeros_initializer)
                 hidden = tf.nn.relu(tf.matmul(self.inputs, weights) + biases)
-            
+
             with tf.variable_scope('outputs'):
                 weights = tf.get_variable('weights', [hidden_size, output_size],
                                           initializer=tf.truncated_normal_initializer(
@@ -29,8 +31,9 @@ class Network(object):
             cross_entropy = tf.nn.softmax_cross_entropy_with_logits_v2(
                 labels=self.labels, logits=logits)
             self.loss = tf.reduce_mean(cross_entropy)
-            self.opt = tf.train.GradientDescentOptimizer(lr).minimize(self.loss)
-    
+            self.opt = tf.train.GradientDescentOptimizer(
+                lr).minimize(self.loss)
+
     def train(self, num_epochs, batch_size,
               train_features, train_labels,
               valid_features, valid_labels,
@@ -45,10 +48,12 @@ class Network(object):
             sess.run(tf.global_variables_initializer())
 
             for epoch_i in range(num_epochs):
-                new_indices = np.random.permutation(np.arange(len(train_features)))
-                
+                new_indices = np.random.permutation(
+                    np.arange(len(train_features)))
+
                 for batch_i in range(num_of_batches):
-                    batch_indices = new_indices[batch_i * batch_size:(batch_i + 1) * batch_size]
+                    batch_indices = new_indices[batch_i *
+                                                batch_size:(batch_i + 1) * batch_size]
                     loss, _ = sess.run([self.loss, self.opt],
                                        feed_dict={self.inputs: train_features[batch_indices],
                                                   self.labels: train_labels[batch_indices]})
@@ -73,9 +78,9 @@ class Network(object):
                               'Val acc: {:.2f}'.format(val_acc),)
             saver.save(sess, checkpoint_fn)
             print('[INFO] Training weights have been '
-                  'successfully saved at {}.'.format(checkpoint_fn))
+                  'successfully saved ats {}.'.format(checkpoint_fn))
             return train_losses, val_losses
-    
+
     def inference(self, test_features, checkpoint_fn):
         saver = tf.train.Saver()
         with tf.Session() as sess:
@@ -85,4 +90,3 @@ class Network(object):
             predictions = sess.run(self.predictions,
                                    feed_dict={self.inputs: test_features})
         return predictions
-            

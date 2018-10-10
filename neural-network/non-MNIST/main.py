@@ -10,6 +10,7 @@ os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
 
 filename = 'notMNIST.pkl'
 
+
 def train(net, num_epochs, batch_size,
           train_features, train_labels,
           valid_features, valid_labels,
@@ -23,6 +24,7 @@ def train(net, num_epochs, batch_size,
     plt.legend()
     plt.show()
 
+
 def test(net, test_features, checkpoint_fn):
     try:
         predictions = net.inference(test_features, checkpoint_fn)
@@ -33,6 +35,7 @@ def test(net, test_features, checkpoint_fn):
                         np.argmax(test_labels, axis=1),
                         dtype=np.int64).mean()
     print('Accuracy on test set: {:.4f}.'.format(accuracy))
+
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
@@ -46,8 +49,8 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     (train_features, train_labels),\
-    (valid_features, valid_labels),\
-    (test_features, test_labels) = process_data(filename)
+        (valid_features, valid_labels),\
+        (test_features, test_labels) = process_data(filename)
 
     features_size = train_features.shape[1]
     labels_size = train_labels.shape[1]

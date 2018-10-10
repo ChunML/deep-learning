@@ -17,7 +17,7 @@ max_steps = 200
 # Future reward discount
 gamma = 0.99
 
-## Exploration parameters
+# Exploration parameters
 # Exploration probability at start
 explore_start = 1.0
 
@@ -27,14 +27,14 @@ explore_stop = 0.1
 # Exploration decay rate
 decay_rate = 0.0001
 
-## Network hyper parameters
+# Network hyper parameters
 # Number of units in FC layer
 hidden_size = 256
 
 # Learning rate for Q-network
 learning_rate = 0.0002
 
-## Memory parameters
+# Memory parameters
 # Memory capacity
 memory_size = 100000
 
@@ -44,10 +44,12 @@ batch_size = 32
 # Number of experiences to prepare
 pretrain_length = batch_size
 
+
 def get_state():
     state = env.render(mode='rgb_array')
     state = np.ascontiguousarray(state, dtype=np.float32) / 255.
     return resize(state, (84, 84))
+
 
 def resize(img, size, interpolation=PIL.Image.NEAREST):
     if interpolation == PIL.Image.NEAREST:
@@ -110,7 +112,8 @@ def train():
                 step += 1
                 env.render()
 
-                explore_p = explore_stop + (explore_start - explore_stop) * np.exp(-decay_rate * step)
+                explore_p = explore_stop + \
+                    (explore_start - explore_stop) * np.exp(-decay_rate * step)
                 if explore_p > np.random.rand():
                     action = env.action_space.sample()
                 else:
@@ -148,7 +151,8 @@ def train():
                 rewards = np.array([each[2] for each in batch])
                 next_states = np.array([each[3] for each in batch])
 
-                target_Qs = sess.run(network.output, feed_dict={network.inputs_: next_states})
+                target_Qs = sess.run(network.output, feed_dict={
+                                     network.inputs_: next_states})
 
                 temp_shape = next_states.shape
                 is_episode_over = (next_states.reshape((temp_shape[0], -1)) ==
@@ -163,6 +167,7 @@ def train():
                                               network.actions_: actions})
 
         saver.save(sess, save_file)
+
 
 if __name__ == '__main__':
     train()

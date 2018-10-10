@@ -13,12 +13,14 @@ test_file_url = 'https://s3.amazonaws.com/udacity-sdc/notMNIST_test.zip'
 train_filename = 'notMNIST_train.zip'
 test_filename = 'notMNIST_test.zip'
 
+
 def download_data(url, filename):
     if not os.path.isfile(filename):
         urlretrieve(url, filename)
         print('[INFO] Zip files has been downloaded!')
     else:
         print('[INFO] Zip files has already existed!')
+
 
 def uncompress_features_labels(filename):
     features = []
@@ -34,13 +36,14 @@ def uncompress_features_labels(filename):
                     image.load()
 
                     feature = np.array(image, dtype=np.float32).flatten()
-                
+
                 label = os.path.split(filename)[1][0]
 
                 features.append(feature)
                 labels.append(label)
     print('[INFO] Features and labels uncompressed!')
     return np.array(features), np.array(labels)
+
 
 def normalize_grayscale(image_data):
     xmin = 0
@@ -50,6 +53,7 @@ def normalize_grayscale(image_data):
     print('[INFO] Image normalized!')
     return 0.1 + (image_data - xmin) * (b - a) / (xmax - xmin)
 
+
 def binarize_label(labels):
     encoder = LabelBinarizer()
     encoder.fit(labels)
@@ -57,10 +61,12 @@ def binarize_label(labels):
     print('[INFO] Label binarized!')
     return labels.astype(np.float32)
 
+
 def dump_to_pickle(data, filename):
     with open(filename, 'wb') as f:
         pickle.dump(data, f, pickle.HIGHEST_PROTOCOL)
     print('[INFO] Data dumped to pickle file at {}.'.format(filename))
+
 
 def process_data(filename):
     if os.path.isfile(filename):
@@ -73,7 +79,8 @@ def process_data(filename):
         download_data(train_file_url, train_filename)
         download_data(test_file_url, test_filename)
 
-        train_features, train_labels = uncompress_features_labels(train_filename)
+        train_features, train_labels = uncompress_features_labels(
+            train_filename)
         test_features, test_labels = uncompress_features_labels(test_filename)
 
         train_features = normalize_grayscale(train_features)

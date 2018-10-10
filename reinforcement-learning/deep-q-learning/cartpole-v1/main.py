@@ -15,7 +15,7 @@ max_steps = 200
 # Future reward discount
 gamma = 0.99
 
-## Exploration parameters
+# Exploration parameters
 # Exploration probability at start
 explore_start = 1.0
 
@@ -25,14 +25,14 @@ explore_stop = 0.01
 # Exploration decay rate
 decay_rate = 0.0001
 
-## Network hyper parameters
+# Network hyper parameters
 # Number of units in FC layer
 hidden_size = 64
 
 # Learning rate for Q-network
 learning_rate = 0.0001
 
-## Memory parameters
+# Memory parameters
 # Memory capacity
 memory_size = 10000
 
@@ -41,6 +41,7 @@ batch_size = 20
 
 # Number of experiences to prepare
 pretrain_length = batch_size
+
 
 def train():
     env.reset()
@@ -76,9 +77,10 @@ def train():
             t = 0
             while t < max_steps:
                 step += 1
-                #env.render()
+                # env.render()
 
-                explore_p = explore_stop + (explore_start - explore_stop) * np.exp(-decay_rate * step)
+                explore_p = explore_stop + \
+                    (explore_start - explore_stop) * np.exp(-decay_rate * step)
                 if explore_p > np.random.rand():
                     action = env.action_space.sample()
                 else:
@@ -101,7 +103,8 @@ def train():
 
                     memory.add((state, action, reward, next_state))
                     env.reset()
-                    state, reward, done, _ = env.step(env.action_space.sample())
+                    state, reward, done, _ = env.step(
+                        env.action_space.sample())
 
                 else:
                     memory.add((state, action, reward, next_state))
@@ -114,9 +117,11 @@ def train():
                 rewards = np.array([each[2] for each in batch])
                 next_states = np.array([each[3] for each in batch])
 
-                target_Qs = sess.run(network.output, feed_dict={network.inputs_: next_states})
+                target_Qs = sess.run(network.output, feed_dict={
+                                     network.inputs_: next_states})
 
-                is_episode_over = (next_states == np.zeros(states[0].shape)).all(axis=1)
+                is_episode_over = (next_states == np.zeros(
+                    states[0].shape)).all(axis=1)
                 target_Qs[is_episode_over] = (0, 0)
 
                 targets = rewards + gamma * np.max(target_Qs, axis=1)
@@ -127,6 +132,7 @@ def train():
                                               network.actions_: actions})
 
         saver.save(sess, save_file)
+
 
 if __name__ == '__main__':
     train()
