@@ -15,6 +15,20 @@ def train(net, num_epochs, batch_size,
           train_features, train_labels,
           valid_features, valid_labels,
           checkpoint_fn):
+    ''' Train and validate network using notMNIST data.
+    Args:
+        net: Network defined in ./network.py
+        num_epochs: number of epochs to train
+        batch_size: batch_size
+        train_features: training features with shape [batch_size, feature_size]
+        train_labels: training labels with shape [batch_size, label_size]
+        valid_features: validation features with shape [batch_size, feature_size]
+        valid_labels: validation labels with shape [batch_size, label_size]
+        checkpoint_fn: checkpoint filename to save after training
+
+    Returns:
+        nothing
+    '''
     train_losses, val_losses = net.train(num_epochs, batch_size,
                                          train_features, train_labels,
                                          valid_features, valid_labels,
@@ -26,6 +40,15 @@ def train(net, num_epochs, batch_size,
 
 
 def test(net, test_features, checkpoint_fn):
+    ''' Test network using notMNIST test data.
+    Args:
+        net: Network defined in ./network.py
+        test_features: test features with shape [batch_size, feature_size]
+        checkpoint_fn: trained checkpoint filename
+
+    Returns:
+        nothing
+    '''
     try:
         predictions = net.inference(test_features, checkpoint_fn)
     except Exception:

@@ -5,6 +5,17 @@ import os
 
 class Network(object):
     def __init__(self, input_size, hidden_size, output_size, lr, name='network'):
+        ''' Train and validate network using notMNIST data.
+        Args:
+            input_size: size of input feature
+            hidden_size: size of hidden layer
+            output_size: size of output layer
+            lr: learning rate
+            name: network's scope name
+
+        Returns:
+            nothing
+        '''
         with tf.name_scope(name):
             self.inputs = tf.placeholder(
                 tf.float32, [None, input_size], name='features')
@@ -38,6 +49,20 @@ class Network(object):
               train_features, train_labels,
               valid_features, valid_labels,
               checkpoint_fn):
+        ''' Train and validate network using notMNIST data.
+        Args:
+            num_epochs: number of epochs to train
+            batch_size: batch_size
+            train_features: training features with shape [batch_size, feature_size]
+            train_labels: training labels with shape [batch_size, label_size]
+            valid_features: validation features with shape [batch_size, feature_size]
+            valid_labels: validation labels with shape [batch_size, label_size]
+            checkpoint_fn: checkpoint filename to save after training
+
+        Returns:
+            train_losses: training losses
+            val_losses: validation losses
+        '''
         saver = tf.train.Saver()
 
         num_of_batches = len(train_features) // batch_size
@@ -82,6 +107,14 @@ class Network(object):
             return train_losses, val_losses
 
     def inference(self, test_features, checkpoint_fn):
+        ''' Test network using notMNIST test data.
+        Args:
+            test_features: test features with shape [batch_size, feature_size]
+            checkpoint_fn: trained checkpoint filename
+
+        Returns:
+            predictions: predictions made by the network
+        '''
         saver = tf.train.Saver()
         with tf.Session() as sess:
             saver.restore(sess, checkpoint_fn)

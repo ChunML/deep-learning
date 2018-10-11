@@ -15,6 +15,14 @@ test_filename = 'notMNIST_test.zip'
 
 
 def download_data(url, filename):
+    ''' Download data from URL.
+    Args:
+        url: URL to get file from
+        filename: filename to save as
+
+    Returns:
+        nothing
+    '''
     if not os.path.isfile(filename):
         urlretrieve(url, filename)
         print('[INFO] Zip files has been downloaded!')
@@ -23,6 +31,14 @@ def download_data(url, filename):
 
 
 def uncompress_features_labels(filename):
+    ''' Uncompress downloaded zip file to features and labels.
+    Args:
+        filename: filename to uncompress
+
+    Returns:
+        features: features with shape [num_of_files, feature_size]
+        labels: labels with shape [num_of_files, label_size]
+    '''
     features = []
     labels = []
 
@@ -45,16 +61,30 @@ def uncompress_features_labels(filename):
     return np.array(features), np.array(labels)
 
 
-def normalize_grayscale(image_data):
+def normalize_grayscale(image_data, a=-1, b=1):
+    ''' Normalize pixel value to range [a, b].
+    Args:
+        image_data: image data with shape [num_of_files, feature_size]
+        a: lower band
+        b: upper band
+
+    Returns:
+        image_data normalized to [a, b]
+    '''
     xmin = 0
     xmax = 255
-    a = 0.1
-    b = 0.9
     print('[INFO] Image normalized!')
     return 0.1 + (image_data - xmin) * (b - a) / (xmax - xmin)
 
 
 def binarize_label(labels):
+    ''' Binarize label from string values to sparse arrays.
+    Args:
+        labels: label data as string values
+
+    Returns:
+        label data as sparse arrays of float32
+    '''
     encoder = LabelBinarizer()
     encoder.fit(labels)
     labels = encoder.transform(labels)
@@ -63,12 +93,30 @@ def binarize_label(labels):
 
 
 def dump_to_pickle(data, filename):
+    ''' Save processed data to pickle file for future use.
+    Args:
+        data: processed data as a Dict
+        filename: pickle filename to dump
+
+    Returns:
+        nothing
+    '''
     with open(filename, 'wb') as f:
         pickle.dump(data, f, pickle.HIGHEST_PROTOCOL)
     print('[INFO] Data dumped to pickle file at {}.'.format(filename))
 
 
 def process_data(filename):
+    ''' Process data for training and testing,
+    including all necessary steps above.
+
+    Args:
+        data: processed data as a Dict
+        filename: pickle filename to dump
+
+    Returns:
+        nothing
+    '''
     if os.path.isfile(filename):
         with open(filename, 'rb') as f:
             data = pickle.load(f)
