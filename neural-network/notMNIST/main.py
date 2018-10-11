@@ -51,13 +51,12 @@ def test(net, test_features, checkpoint_fn):
     '''
     try:
         predictions = net.inference(test_features, checkpoint_fn)
+        accuracy = np.equal(predictions,
+                            np.argmax(test_labels, axis=1),
+                            dtype=np.int64).mean()
+        print('Accuracy on test set: {:.4f}.'.format(accuracy))
     except Exception:
         print('[ERROR] Checkpoint file does not exist. Train the network first!')
-
-    accuracy = np.equal(predictions,
-                        np.argmax(test_labels, axis=1),
-                        dtype=np.int64).mean()
-    print('Accuracy on test set: {:.4f}.'.format(accuracy))
 
 
 if __name__ == '__main__':

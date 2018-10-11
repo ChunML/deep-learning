@@ -24,10 +24,11 @@ def download_data(url, filename):
         nothing
     '''
     if not os.path.isfile(filename):
+        print('[INFO] Downloading {}...'.format(filename))
         urlretrieve(url, filename)
-        print('[INFO] Zip files has been downloaded!')
+        print('[INFO] {} has been downloaded!'.format(filename))
     else:
-        print('[INFO] Zip files has already existed!')
+        print('[INFO] {} has already existed. Download skipped!'.format(filename))
 
 
 def uncompress_features_labels(filename):
