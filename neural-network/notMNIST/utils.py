@@ -1,10 +1,10 @@
+import matplotlib.pyplot as plt
 from urllib.request import urlretrieve
 import os
 from zipfile import ZipFile
 from tqdm import tqdm
 import numpy as np
 from PIL import Image
-from sklearn.preprocessing import LabelBinarizer
 import pickle
 from sklearn.model_selection import train_test_split
 
@@ -12,6 +12,11 @@ train_file_url = 'https://s3.amazonaws.com/udacity-sdc/notMNIST_train.zip'
 test_file_url = 'https://s3.amazonaws.com/udacity-sdc/notMNIST_test.zip'
 train_filename = 'notMNIST_train.zip'
 test_filename = 'notMNIST_test.zip'
+int_to_label = ['A', 'B', 'C', 'D', 'E', 'F',
+                'G', 'H', 'I', 'J', 'K', 'L',
+                'M', 'N', 'O', 'P', 'Q', 'R',
+                'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z']
+label_to_int = dict((v, k) for (k, v) in enumerate(int_to_label))
 
 
 def download_data(url, filename):
@@ -78,7 +83,7 @@ def normalize_grayscale(image_data, a=-1, b=1):
     return 0.1 + (image_data - xmin) * (b - a) / (xmax - xmin)
 
 
-def binarize_label(labels):
+def convert_labels(labels):
     ''' Binarize label from string values to sparse arrays.
     Args:
         labels: label data as string values
@@ -86,11 +91,9 @@ def binarize_label(labels):
     Returns:
         label data as sparse arrays of float32
     '''
-    encoder = LabelBinarizer()
-    encoder.fit(labels)
-    labels = encoder.transform(labels)
+    labels = [label_to_int[l] for l in labels]
     print('[INFO] Label binarized!')
-    return labels.astype(np.float32)
+    return np.array(labels, dtype=np.int32)
 
 
 def dump_to_pickle(data, filename):
@@ -135,8 +138,8 @@ def process_data(filename):
         train_features = normalize_grayscale(train_features)
         test_features = normalize_grayscale(test_features)
 
-        train_labels = binarize_label(train_labels)
-        test_labels = binarize_label(test_labels)
+        train_labels = convert_labels(train_labels)
+        test_labels = convert_labels(test_labels)
 
         train_features, valid_features, train_labels, valid_labels = train_test_split(
             train_features, train_labels,
@@ -153,3 +156,30 @@ def process_data(filename):
         dump_to_pickle(data, filename)
         print('[INFO] Data successfully loaded!')
         return (train_features, train_labels), (valid_features, valid_labels), (test_features, test_labels)
+
+
+def plot_result_sample(features, predictions):
+    ''' Plot randomly 16 test images with their predicted labels
+
+    Args:
+        features: features of test data
+        predictions: predictions from network
+
+    Returns:
+        nothing
+    '''
+    random_indices = np.random.permutation(len(features))
+    features = features[random_indices]
+    predictions = predictions[random_indices]
+
+    _, axes = plt.subplots(ncols=4, nrows=4)
+    for i in range(16):
+        feature = (features[i] * 255).reshape((28, 28)).astype(np.int32)
+        img = Image.fromarray(feature)
+        axes[int(i / 4), i % 4].imshow(img)
+        axes[int(i / 4), i % 4].axis('off')
+        axes[int(i / 4), i % 4].text(2, 2,
+                                     int_to_label[predictions[i]],
+                                     color='red',
+                                     fontsize=20)
+    plt.show()

@@ -1,4 +1,4 @@
-from utils import process_data
+from utils import process_data, plot_result_sample, int_to_label
 import tensorflow as tf
 from network import Network
 import matplotlib.pyplot as plt
@@ -51,12 +51,15 @@ def test(net, test_features, checkpoint_fn):
     '''
     try:
         predictions = net.inference(test_features, checkpoint_fn)
-        accuracy = np.equal(predictions,
-                            np.argmax(test_labels, axis=1),
-                            dtype=np.int64).mean()
-        print('Accuracy on test set: {:.4f}.'.format(accuracy))
+        predictions = np.argmax(predictions, axis=1)
     except Exception:
         print('[ERROR] Checkpoint file does not exist. Train the network first!')
+
+    accuracy = np.equal(predictions, test_labels,
+                        dtype=np.int64).mean()
+    print('[INFO] Accuracy on test set: {:.4f}.'.format(accuracy))
+    print('[INFO] Plotting result samples...')
+    plot_result_sample(test_features, predictions)
 
 
 if __name__ == '__main__':
@@ -75,7 +78,7 @@ if __name__ == '__main__':
         (test_features, test_labels) = process_data(filename)
 
     features_size = train_features.shape[1]
-    labels_size = train_labels.shape[1]
+    labels_size = len(int_to_label)
 
     net = Network(input_size=features_size,
                   hidden_size=args.hidden_size,

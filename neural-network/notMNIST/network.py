@@ -19,7 +19,7 @@ class Network(object):
         with tf.name_scope(name):
             self.inputs = tf.placeholder(
                 tf.float32, [None, input_size], name='features')
-            self.labels = tf.placeholder(tf.float32, [None, output_size])
+            self.labels = tf.placeholder(tf.int32, [None])
             with tf.variable_scope('hidden'):
                 weights = tf.get_variable('weights', [input_size, hidden_size],
                                           initializer=tf.truncated_normal_initializer(
@@ -42,11 +42,11 @@ class Network(object):
                 logits = tf.matmul(hidden, weights) + biases
                 tf.summary.histogram('logits', logits)
             self.predictions = tf.argmax(logits, axis=1)
-            correct_preds = tf.equal(tf.argmax(self.labels, axis=1),
+            correct_preds = tf.equal(tf.cast(self.labels, tf.int64),
                                      self.predictions)
             self.acc = tf.reduce_mean(tf.cast(correct_preds, tf.float32))
             tf.summary.scalar('accuracy', self.acc)
-            cross_entropy = tf.nn.softmax_cross_entropy_with_logits_v2(
+            cross_entropy = tf.nn.sparse_softmax_cross_entropy_with_logits(
                 labels=self.labels, logits=logits)
             self.loss = tf.reduce_mean(cross_entropy)
             tf.summary.scalar('loss', self.loss)
@@ -117,7 +117,7 @@ class Network(object):
                               'Val acc: {:.2f}'.format(val_acc),)
             saver.save(sess, checkpoint_fn)
             print('[INFO] Training weights have been '
-                  'successfully saved ats {}.'.format(checkpoint_fn))
+                  'successfully saved to {}.'.format(checkpoint_fn))
             return train_losses, val_losses
 
     def inference(self, test_features, checkpoint_fn):
