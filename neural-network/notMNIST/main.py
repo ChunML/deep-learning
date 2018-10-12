@@ -1,6 +1,7 @@
 from utils import process_data, plot_result_sample, int_to_label
 import tensorflow as tf
 from network import Network
+from network_keras import Network as NetworkKeras
 import matplotlib.pyplot as plt
 import os
 import numpy as np
@@ -51,12 +52,12 @@ def test(net, test_features, checkpoint_fn):
     '''
     try:
         predictions = net.inference(test_features, checkpoint_fn)
-        predictions = np.argmax(predictions, axis=1)
     except Exception:
         print('[ERROR] Checkpoint file does not exist. Train the network first!')
+        return
 
     accuracy = np.equal(predictions, test_labels,
-                        dtype=np.int64).mean()
+                        dtype=predictions.dtype).mean()
     print('[INFO] Accuracy on test set: {:.4f}.'.format(accuracy))
     print('[INFO] Plotting result samples...')
     plot_result_sample(test_features, predictions)
@@ -65,6 +66,7 @@ def test(net, test_features, checkpoint_fn):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--mode', default='train')
+    parser.add_argument('--model', default='tf')
     parser.add_argument('--image-dir', default=None)
     parser.add_argument('--hidden-size', default=256)
     parser.add_argument('--batch-size', default=128)
@@ -80,10 +82,18 @@ if __name__ == '__main__':
     features_size = train_features.shape[1]
     labels_size = len(int_to_label)
 
-    net = Network(input_size=features_size,
-                  hidden_size=args.hidden_size,
-                  output_size=labels_size,
-                  lr=args.lr)
+    if args.model == 'tf':
+        net = Network(input_size=features_size,
+                      hidden_size=args.hidden_size,
+                      output_size=labels_size,
+                      lr=args.lr)
+    elif args.model == 'keras':
+        net = NetworkKeras(input_size=features_size,
+                           hidden_size=args.hidden_size,
+                           output_size=labels_size,
+                           lr=args.lr)
+    else:
+        print('[ERROR] Unknown model {}.'.format(args.model))
 
     if args.mode.lower() == 'train':
         train(net, args.num_epochs, args.batch_size,
