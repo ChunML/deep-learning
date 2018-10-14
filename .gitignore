@@ -114,3 +114,4 @@ dmypy.json
 *ckpt
 checkpoints/
 logdir/
+data/
