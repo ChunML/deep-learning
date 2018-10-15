@@ -24,11 +24,11 @@ class Network(object):
             pool5, [-1, reduce(lambda x, y: x * y, pool5_shape[1:])])
 
         fc6 = self._fc(flatten, 'fc6', 2048)
-        fc6_dropout = tf.nn.dropout(fc6, keep_prob=0.5)
+        fc6_dropout = tf.nn.dropout(fc6, keep_prob=0.6, name='fc6_dropout')
         fc7 = self._fc(fc6_dropout, 'fc7', 1024)
-        fc6_dropout = tf.nn.dropout(fc7, keep_prob=0.5)
+        fc7_dropout = tf.nn.dropout(fc7, keep_prob=0.6, name='fc7_dropout')
         logits = self._fc(
-            fc6_dropout, 'logits', ouput_size, activate_func=None)
+            fc7_dropout, 'logits', ouput_size, activate_func=None)
         self.predictions = tf.argmax(logits, axis=1)
         self.accuracy = tf.reduce_mean(
             tf.cast(tf.equal(self.predictions, labels), tf.float32))
@@ -45,6 +45,7 @@ class Network(object):
                                                         decay_steps,
                                                         decay_factor,
                                                         staircase=True)
+        tf.summary.scalar('lr', self.learning_rate)
         self.opt = tf.train.GradientDescentOptimizer(
             self.learning_rate).minimize(self.loss)
         self.merged = tf.summary.merge_all()
@@ -88,7 +89,8 @@ class Network(object):
                         [self.opt, self.loss, self.accuracy])
                     if batch_i % 50 == 0:
                         summary = sess.run(self.merged)
-                        train_writer.add_summary(summary, self.global_step)
+                        train_writer.add_summary(
+                            summary, epoch_i * num_batches + batch_i)
                     train_info['loss'].append(loss)
                     train_info['acc'].append(acc)
                     batch_time = time() - start_time

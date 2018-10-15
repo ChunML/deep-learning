@@ -25,7 +25,7 @@ def parse_data(filename, label, new_size=224):
     img_string = tf.read_file(filename)
     img_decoded = tf.image.decode_jpeg(img_string)
     image_resized = tf.image.resize_images(
-        img_decoded, (new_size, new_size)) / 255.
+        img_decoded, (new_size, new_size)) - [123.68, 116.779, 103.939]
     image_resized.set_shape([224, 224, 3])
     label = tf.cast(label, tf.int64)
 
@@ -55,9 +55,9 @@ def unzip_data(filepath):
         with ZipFile(filename) as zipf:
             zipf.extractall(sub_folder)
 
+
 def converse_time(seconds):
     hours = seconds // 3600
-    minutes = (seconds - hours * 3600)// 60
+    minutes = (seconds - hours * 3600) // 60
     seconds = seconds - hours * 3600 - minutes * 60
     return hours, minutes, seconds
-

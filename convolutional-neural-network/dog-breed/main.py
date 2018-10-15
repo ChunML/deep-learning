@@ -6,7 +6,6 @@ import pandas as pd
 def main():
     label_path = './data/all/labels.csv'
     batch_size = 64
-    new_size = 224
 
     filenames, labels, int_to_breed, breed_to_int = read_labels_from_file(
         label_path)
