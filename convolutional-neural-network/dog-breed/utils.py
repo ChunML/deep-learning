@@ -32,15 +32,28 @@ def parse_data(filename, label, new_size=224):
     return image_resized, label
 
 
-def input_fn(filenames, labels, batch_size):
-    dataset = tf.data.Dataset.from_tensor_slices((filenames, labels))
+def input_fn(filenames, labels, batch_size, num_train_files):
+    train_filenames = filenames[:num_train_files]
+    train_labels = labels[:num_train_files]
+    val_filenames = filenames[num_train_files:]
+    val_labels = labels[num_train_files:]
+    dataset = tf.data.Dataset.from_tensor_slices(
+        (train_filenames, train_labels))
     dataset = dataset.map(parse_data).shuffle(
-        len(filenames)).repeat().batch(batch_size)
+        len(train_filenames)).repeat().batch(batch_size)
 
-    iterator = dataset.make_one_shot_iterator()
+    val_dataset = tf.data.Dataset.from_tensor_slices(
+        (val_filenames, val_labels))
+    val_dataset = val_dataset.map(parse_data).batch(batch_size)
+
+    iterator = tf.data.Iterator.from_structure(dataset.output_types,
+                                               dataset.output_shapes)
     next_element = iterator.get_next()
 
-    return next_element
+    init_op = iterator.make_initializer(dataset)
+    val_init_op = iterator.make_initializer(val_dataset)
+
+    return next_element, init_op, val_init_op
 
 
 def unzip_data(filepath):

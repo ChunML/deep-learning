@@ -2,12 +2,11 @@ import tensorflow as tf
 import numpy as np
 from functools import reduce
 from time import time
-from utils import converse_time
-from collections import defaultdict
 
 
 class Network(object):
     def __init__(self, images, labels, ouput_size, initial_learning_rate, decay_steps, decay_factor=0.94):
+        self.is_training = tf.placeholder(tf.bool)
         with tf.name_scope('conv1') as scope:
             pool1 = self._build_conv2d_block(images, scope, 64, 2)
         with tf.name_scope('conv2') as scope:
@@ -24,11 +23,9 @@ class Network(object):
             pool5, [-1, reduce(lambda x, y: x * y, pool5_shape[1:])])
 
         fc6 = self._fc(flatten, 'fc6', 2048)
-        fc6_dropout = tf.nn.dropout(fc6, keep_prob=0.6, name='fc6_dropout')
-        fc7 = self._fc(fc6_dropout, 'fc7', 1024)
-        fc7_dropout = tf.nn.dropout(fc7, keep_prob=0.6, name='fc7_dropout')
+        fc7 = self._fc(fc6, 'fc7', 1024)
         logits = self._fc(
-            fc7_dropout, 'logits', ouput_size, activate_func=None)
+            fc7, 'logits', ouput_size, activate_func=None)
         self.predictions = tf.argmax(logits, axis=1)
         self.accuracy = tf.reduce_mean(
             tf.cast(tf.equal(self.predictions, labels), tf.float32))
@@ -72,33 +69,11 @@ class Network(object):
 
     def _fc(self, inputs, name, ouput_size, activate_func=tf.nn.relu):
         fc = tf.contrib.layers.fully_connected(
-            inputs, ouput_size, activation_fn=activate_func)
+            inputs, ouput_size, activation_fn=activate_func, scope=name)
+        if activate_func is not None:
+            fc = tf.contrib.layers.dropout(fc,
+                                           keep_prob=0.5,
+                                           is_training=self.is_training,
+                                           scope=name + 'dropout')
         tf.summary.histogram(name, fc)
         return fc
-
-    def train(self, num_epochs, num_batches, checkpoint_fn='checkpoints/dogs.ckpt'):
-        train_info = defaultdict(list)
-        saver = tf.train.Saver()
-        with tf.Session() as sess:
-            train_writer = tf.summary.FileWriter('logdir', sess.graph)
-            sess.run(tf.global_variables_initializer())
-            for epoch_i in range(num_epochs):
-                for batch_i in range(num_batches):
-                    start_time = time()
-                    _, loss, acc = sess.run(
-                        [self.opt, self.loss, self.accuracy])
-                    if batch_i % 50 == 0:
-                        summary = sess.run(self.merged)
-                        train_writer.add_summary(
-                            summary, epoch_i * num_batches + batch_i)
-                    train_info['loss'].append(loss)
-                    train_info['acc'].append(acc)
-                    batch_time = time() - start_time
-                    batches_left = (num_epochs - epoch_i - 1) * \
-                        num_batches + num_batches - batch_i
-                    time_left = batch_time * batches_left
-                    hours, minutes, seconds = converse_time(time_left)
-                    print('Epoch: {} Batch: {}/{} Loss: {:.4f} Accuracy: {:.4f} Time left: {:.0f}:{:.0f}:{:.0f}'.format(
-                        epoch_i + 1, batch_i, num_batches, loss, acc, hours, minutes, seconds))
-            saver.save(sess, checkpoint_fn)
-        return train_info
