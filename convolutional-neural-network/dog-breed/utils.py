@@ -11,7 +11,7 @@ from time import time
 data_root = './data/all'
 
 
-def read_labels_from_file(label_path):
+def read_labels_from_file(data_root, label_path):
     data = pd.read_csv(label_path)
     data['fn'] = data.id.map(lambda x: os.path.join(
         data_root, 'train', x + '.jpg'))
@@ -21,18 +21,36 @@ def read_labels_from_file(label_path):
     return data.fn, data.int_breed, int_to_breed, breed_to_int
 
 
-def parse_data(filename, label, new_size=224):
+def parse_data(filename, label=None, new_size=224):
+    means = [123.68, 116.779, 103.939]
     img_string = tf.read_file(filename)
-    img_decoded = tf.image.decode_jpeg(img_string)
-    image_resized = tf.image.resize_images(
-        img_decoded, (new_size, new_size)) - [123.68, 116.779, 103.939]
-    image_resized.set_shape([224, 224, 3])
+    img = tf.image.decode_jpeg(img_string)
+    img = tf.image.resize_images(
+        img, (new_size, new_size))
+    img.set_shape([224, 224, 3])
+    img = tf.to_float(img)
+    channels = tf.split(axis=2, num_or_size_splits=3, value=img)
+    for i in range(3):
+        channels[i] -= means[i]
+    if label == None:
+        return tf.concat(axis=2, values=channels)
+
     label = tf.cast(label, tf.int64)
 
-    return image_resized, label
+    return tf.concat(axis=2, values=channels), label
 
 
-def input_fn(filenames, labels, batch_size, num_train_files):
+def eval_input_fn(filenames):
+    dataset = tf.data.Dataset.from_tensor_slices(filenames)
+    dataset = dataset.map(parse_data).batch(1)
+
+    iterator = dataset.make_one_shot_iterator()
+
+    next_element = iterator.get_next()
+    return next_element
+
+
+def train_input_fn(filenames, labels, batch_size, num_train_files):
     train_filenames = filenames[:num_train_files]
     train_labels = labels[:num_train_files]
     val_filenames = filenames[num_train_files:]
