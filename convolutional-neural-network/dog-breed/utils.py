@@ -7,6 +7,7 @@ import numpy as np
 from PIL import Image
 from collections import defaultdict
 from time import time
+slim = tf.contrib.slim
 
 data_root = './data/all'
 
@@ -85,6 +86,29 @@ def unzip_data(filepath):
         sub_folder = filename[:filepath.find('.')]
         with ZipFile(filename) as zipf:
             zipf.extractall(sub_folder)
+
+
+def get_variables_to_restore_and_initializer(exclude_vars, use_slim=False):
+    trainable_variables = tf.trainable_variables()
+
+    if use_slim:
+        variables_to_restore = [v for v in trainable_variables if 'fc8' not in v.op.name ]
+        variables_to_initialize = [v for v in trainable_variables if 'fc8' in v.op.name]
+    else:
+        variables_to_restore = {}
+        variables_to_initialize = []
+        for v in trainable_variables:
+            v_name = v.op.name
+            kernel_or_bias = v_name[v_name.rfind('/') + 1:]
+            if kernel_or_bias == 'kernel':
+                key = v_name[:v_name.rfind('/') + 1] + 'weights'
+            else:
+                key = v_name[:v_name.rfind('/') + 1] + 'biases'
+            if 'fc8' in v_name:
+                variables_to_initialize.append(v)
+            else:
+                variables_to_restore[key] = v
+    return variables_to_restore, variables_to_initialize
 
 
 def converse_time(seconds):

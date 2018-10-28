@@ -1,6 +1,9 @@
-from utils import read_labels_from_file, train_input_fn, eval_input_fn
+from utils import read_labels_from_file, train_input_fn, eval_input_fn, get_variables_to_restore_and_initializer
 # from network import Network
-from slim_network import vgg16, vgg_arg_scope
+# from slim_network import vgg16, vgg_arg_scope
+# from network import vgg16
+import slim_network
+import network
 import pandas as pd
 import os
 import tensorflow as tf
@@ -66,12 +69,20 @@ tf.app.flags.DEFINE_float(
     'learning rate'
 )
 
+tf.app.flags.DEFINE_bool(
+    'use_slim', False,
+    'whether to use tf.slim or not'
+)
+
 FLAGS = tf.app.flags.FLAGS
 
 
 def create_train_op(logits, labels):
-    loss = tf.reduce_mean(tf.nn.sparse_softmax_cross_entropy_with_logits(
-        logits=logits, labels=labels))
+    loss = tf.losses.sparse_softmax_cross_entropy(
+        logits=logits, labels=labels)
+    reg_loss = tf.losses.get_regularization_loss()
+    loss += reg_loss
+    # loss = tf.losses.get_total_loss()
     opt = tf.train.GradientDescentOptimizer(FLAGS.lr)
     train_op = opt.minimize(loss)
 
@@ -91,18 +102,38 @@ def train():
     val_num_batches = (len(filenames) - num_train_files) // FLAGS.batch_size
     is_training = tf.placeholder(tf.bool)
 
-    with slim.arg_scope(vgg_arg_scope()):
-        logits, _ = vgg16(features, FLAGS.num_classes, is_training)
+    # with slim.arg_scope(vgg_arg_scope()):
+    # logits, _ = vgg16(features, FLAGS.num_classes, is_training)
+    if FLAGS.use_slim:
+        logits = slim_network.vgg16(features, FLAGS.num_classes, is_training)
+    else:
+        logits = network.vgg16(features, FLAGS.num_classes, is_training)
 
     predictions = tf.argmax(logits, axis=1)
     acc_op = tf.reduce_mean(
         tf.cast(tf.equal(predictions, labels), tf.float32))
     loss_op, train_op = create_train_op(logits, labels)
 
-    variables_to_restore = slim.get_variables_to_restore(exclude=[
-                                                         FLAGS.exclude_vars])
-    variables_to_initialize = slim.get_variables_to_restore(include=[
-                                                            FLAGS.exclude_vars])
+    # variables_to_restore = {}
+    # variables_to_initialize = []
+    # for v in trainable_variables:
+    #     v_name = v.op.name
+    #     kernel_or_bias = v_name[v_name.rfind('/') + 1:]
+    #     if kernel_or_bias == 'kernel':
+    #         key = v_name[:v_name.rfind('/') + 1] + 'weights'
+    #     else:
+    #         key = v_name[:v_name.rfind('/') + 1] + 'biases'
+    #     if 'fc8' in v_name:
+    #         variables_to_initialize.append(v)
+    #     else:
+    #         variables_to_restore[key] = v
+
+    variables_to_restore, variables_to_initialize = get_variables_to_restore_and_initializer(
+        FLAGS.exclude_vars, FLAGS.use_slim)
+    # variables_to_restore = slim.get_variables_to_restore(exclude=[
+    #                                                      FLAGS.exclude_vars])
+    # variables_to_initialize = slim.get_variables_to_restore(include=[
+    #                                                         FLAGS.exclude_vars])
 
     # init_fn = slim.assign_from_checkpoint_fn('models/vgg_16.ckpt', variables_to_restore)
 
@@ -171,13 +202,12 @@ def evaluate():
     with slim.arg_scope(vgg_arg_scope()):
         logits, _ = vgg16(features, FLAGS.num_classes, is_training)
     predictions = tf.argmax(logits, axis=1)
-    
+
     with tf.Session() as sess:
         saver = tf.train.Saver()
         saver.restore(sess, FLAGS.log_dir)
         for _ in range(len(filenames)):
             print(sess.run(predictions, feed_dict={is_training: False}))
-
 
 
 def main(_):
