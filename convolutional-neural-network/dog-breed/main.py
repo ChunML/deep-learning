@@ -78,18 +78,41 @@ FLAGS = tf.app.flags.FLAGS
 
 
 def create_train_op(logits, labels):
+    ''' Create training op.
+    Args:
+        logits: output from the last layer
+        labels: ground truth labels
+
+    Returns:
+        loss_op: loss op that containing both cross entropy
+                 and regularization losses
+        train_op: training op
+    '''
     loss = tf.losses.sparse_softmax_cross_entropy(
         logits=logits, labels=labels)
     reg_loss = tf.losses.get_regularization_loss()
-    loss += reg_loss
+    loss_op = loss + reg_loss
     # loss = tf.losses.get_total_loss()
     opt = tf.train.GradientDescentOptimizer(FLAGS.lr)
     train_op = opt.minimize(loss)
 
-    return loss, train_op
+    return loss_op, train_op
 
 
 def train():
+    ''' Train the model with following steps:
+        1. Get filenames and labels from CSV file
+        2. Create train and val data_init_op
+        3. Get the output of the network
+        4. Create training op for training
+        5. Restore pre-trained weights from ImageNet
+        6. Start training
+    Args:
+        Nothing
+
+    Returns:
+        Nothing
+    '''
     filenames, labels, int_to_breed, _ = read_labels_from_file(
         FLAGS.data_root, FLAGS.label_path)
 
@@ -102,8 +125,6 @@ def train():
     val_num_batches = (len(filenames) - num_train_files) // FLAGS.batch_size
     is_training = tf.placeholder(tf.bool)
 
-    # with slim.arg_scope(vgg_arg_scope()):
-    # logits, _ = vgg16(features, FLAGS.num_classes, is_training)
     if FLAGS.use_slim:
         logits = slim_network.vgg16(features, FLAGS.num_classes, is_training)
     else:
@@ -114,34 +135,8 @@ def train():
         tf.cast(tf.equal(predictions, labels), tf.float32))
     loss_op, train_op = create_train_op(logits, labels)
 
-    # variables_to_restore = {}
-    # variables_to_initialize = []
-    # for v in trainable_variables:
-    #     v_name = v.op.name
-    #     kernel_or_bias = v_name[v_name.rfind('/') + 1:]
-    #     if kernel_or_bias == 'kernel':
-    #         key = v_name[:v_name.rfind('/') + 1] + 'weights'
-    #     else:
-    #         key = v_name[:v_name.rfind('/') + 1] + 'biases'
-    #     if 'fc8' in v_name:
-    #         variables_to_initialize.append(v)
-    #     else:
-    #         variables_to_restore[key] = v
-
     variables_to_restore, variables_to_initialize = get_variables_to_restore_and_initializer(
         FLAGS.exclude_vars, FLAGS.use_slim)
-    # variables_to_restore = slim.get_variables_to_restore(exclude=[
-    #                                                      FLAGS.exclude_vars])
-    # variables_to_initialize = slim.get_variables_to_restore(include=[
-    #                                                         FLAGS.exclude_vars])
-
-    # init_fn = slim.assign_from_checkpoint_fn('models/vgg_16.ckpt', variables_to_restore)
-
-    # slim.learning.train(train_op,
-    #                     init_fn=init_fn,
-    #                     logdir='logdir',
-    #                     number_of_steps=2000,
-    #                     log_every_n_steps=10)
 
     train_info = defaultdict(list)
     with tf.Session() as sess:
@@ -192,6 +187,18 @@ def train():
 
 
 def evaluate():
+    ''' Evaluate the model trained above:
+        1. Get test filenames
+        2. Create data_init_op for test
+        3. Get the output of the network
+        5. Restore weights trained above
+        6. Start testing
+    Args:
+        Nothing
+
+    Returns:
+        Nothing
+    '''
     filenames = os.listdir(os.path.join(FLAGS.data_root, 'test'))
     filenames = [os.path.join(FLAGS.data_root, 'test', fn) for fn in filenames]
 
@@ -199,8 +206,7 @@ def evaluate():
 
     is_training = tf.placeholder(tf.bool)
 
-    with slim.arg_scope(vgg_arg_scope()):
-        logits, _ = vgg16(features, FLAGS.num_classes, is_training)
+    logits = vgg16(features, FLAGS.num_classes, is_training)
     predictions = tf.argmax(logits, axis=1)
 
     with tf.Session() as sess:

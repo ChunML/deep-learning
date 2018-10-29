@@ -13,6 +13,19 @@ data_root = './data/all'
 
 
 def read_labels_from_file(data_root, label_path):
+    ''' Get information from CSV files, including:
+        1. Get image filenames
+        2. Create dict to categorize labels
+    Args:
+        data_root: root path of data folder
+        label_path: path to the CSV file
+
+    Returns:
+        fn: the fool paths of all training images
+        int_breed: the training labels in integer
+        int_to_breed: dict to convert indices to labels
+        breed_to_int: dict to convert labels to indices
+    '''
     data = pd.read_csv(label_path)
     data['fn'] = data.id.map(lambda x: os.path.join(
         data_root, 'train', x + '.jpg'))
@@ -23,6 +36,19 @@ def read_labels_from_file(data_root, label_path):
 
 
 def parse_data(filename, label=None, new_size=224):
+    ''' Processing images and labels
+        1. Read image
+        2. Resize image to size [new_size, new_size]
+        3. Subtract by mean from ImageNet
+        4. Cast int labels to tf.int64
+    Args:
+        filename: full paths to images
+        label: labels in interger (None if in eval mode)
+        new_size: new size to resize image
+
+    Returns:
+        tuple of processed images and labels
+    '''
     means = [123.68, 116.779, 103.939]
     img_string = tf.read_file(filename)
     img = tf.image.decode_jpeg(img_string)
@@ -42,6 +68,13 @@ def parse_data(filename, label=None, new_size=224):
 
 
 def eval_input_fn(filenames):
+    ''' Create input_fn for eval mode
+    Args:
+        filenames: full paths to images
+
+    Returns:
+        op to iterate through test images
+    '''
     dataset = tf.data.Dataset.from_tensor_slices(filenames)
     dataset = dataset.map(parse_data).batch(1)
 
@@ -52,6 +85,20 @@ def eval_input_fn(filenames):
 
 
 def train_input_fn(filenames, labels, batch_size, num_train_files):
+    ''' Create input_fn for training mode:
+        1. Split data into training data and validation data
+        2. Create seperate init_fn for training data and validation data
+    Args:
+        filenames: full paths to images
+        labels: labels in interger
+        batch_size: batch size
+        num_train_files: number of training files
+
+    Returns:
+        op to iterate through data
+        init_op: op for training
+        val_init_op: op for validation
+    '''
     train_filenames = filenames[:num_train_files]
     train_labels = labels[:num_train_files]
     val_filenames = filenames[num_train_files:]
@@ -76,6 +123,13 @@ def train_input_fn(filenames, labels, batch_size, num_train_files):
 
 
 def unzip_data(filepath):
+    ''' Unzip downloaded data
+    Args:
+        filepath: path to zip file
+
+    Returns:
+        Nothing
+    '''
     folder = filepath[:filepath.find('.')]
     with ZipFile(filepath) as zipf:
         zipf.extractall(folder)
@@ -89,6 +143,20 @@ def unzip_data(filepath):
 
 
 def get_variables_to_restore_and_initializer(exclude_vars, use_slim=False):
+    ''' Restore weights from pretrained ImageNet weights
+        1. Create list of variables to restore exclude ones from exclude_vars
+           If not use_slim, we need to create a dict to map new variable names
+        2. Create list of variables to initialize
+           This will be the ones in exclude_vars
+    Args:
+        exclude_vars: list of regexes of variables to ignore when restoring
+                      ex: 'fc8' -> ignore 'fc8/weights', 'fc8/biases'
+        use_slim: whether using slim model or not
+
+    Returns:
+        variables_to_restore: list of variables to be restored
+        variables_to_initialize: list of variables to be initialized
+    '''
     trainable_variables = tf.trainable_variables()
 
     if use_slim:
