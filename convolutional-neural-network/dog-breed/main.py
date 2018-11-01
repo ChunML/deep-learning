@@ -1,7 +1,4 @@
 from utils import read_labels_from_file, train_input_fn, eval_input_fn, get_variables_to_restore_and_initializer
-# from network import Network
-# from slim_network import vgg16, vgg_arg_scope
-# from network import vgg16
 import slim_network
 import network
 import pandas as pd
