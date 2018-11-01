@@ -2,6 +2,9 @@
 __pycache__/
 *.py[cod]
 *$py.class
+models/
+checkpoints/
+*.ckpt
 
 # C extensions
 *.so
@@ -114,3 +117,4 @@ dmypy.json
 *ckpt
 checkpoints/
 logdir/
+data/
