@@ -87,9 +87,12 @@ def create_train_op(logits, labels):
     '''
     loss = tf.losses.sparse_softmax_cross_entropy(
         logits=logits, labels=labels)
-    reg_loss = tf.losses.get_regularization_loss()
-    loss_op = loss + reg_loss
-    # loss = tf.losses.get_total_loss()
+    losses = [loss]
+    reg_losses = tf.losses.get_regularization_losses()
+    if reg_losses:
+        reg_loss = tf.add_n(reg_losses, name='regularization_loss')
+        losses.append(loss)
+    loss_op = tf.add_n(losses, name='total_loss')
     opt = tf.train.GradientDescentOptimizer(FLAGS.lr)
     train_op = opt.minimize(loss)
 
@@ -203,7 +206,11 @@ def evaluate():
 
     is_training = tf.placeholder(tf.bool)
 
-    logits = vgg16(features, FLAGS.num_classes, is_training)
+    if FLAGS.use_slim:
+        logits = slim_network.vgg16(features, FLAGS.num_classes, is_training)
+    else:
+        logits = network.vgg16(features, FLAGS.num_classes, is_training)
+
     predictions = tf.argmax(logits, axis=1)
 
     with tf.Session() as sess:
